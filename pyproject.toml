@@ -6,6 +6,8 @@ name="co2_ml"
 version="1.0.0"
 description="Production-style CO2 emissions regression: model zoo, tuning, registry, monitoring, auto-retrain"
 requires-python=">=3.9"
+license={text="MIT"}
+authors=[{name="Ankit Kumar Sharma"}]
 dependencies=["pandas","numpy","scikit-learn","scipy","pyyaml","joblib"]
 [project.optional-dependencies]
 boosters=["xgboost","lightgbm"]

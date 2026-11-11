@@ -108,6 +108,7 @@ tests/                     end-to-end tests (synthetic data)
 docs/flow.png flow.svg     the diagram above
 LEARN.md                   step-by-step explanation of every part
 Dockerfile
+LICENSE                    MIT license
 ```
 
 ## Deploy
@@ -133,4 +134,4 @@ The image holds code only. The `models/` folder is mounted because it changes af
 
 ## License
 
-Add a license (for example MIT) before publishing.
+Released under the [MIT License](LICENSE). Free to use, modify and share, with no warranty.
