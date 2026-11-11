@@ -1,0 +1,12 @@
+pandas
+numpy
+scikit-learn
+scipy
+pyyaml
+shap
+fastapi
+uvicorn
+anthropic
+joblib
+xgboost    # optional
+lightgbm   # optional

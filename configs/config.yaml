@@ -1,0 +1,39 @@
+data:
+  path: data/CO2_Emissions.csv
+  target: "CO2 Emissions(g/km)"
+  drop_duplicates: true
+  categorical: ["Vehicle Class", "Transmission", "Fuel Type"]
+  numeric_spec: ["Engine Size(L)", "Cylinders"]
+  consumption_col: "Fuel Consumption Comb (L/100 km)"
+split: {test_size: 0.20, random_state: 42}
+# Two scenarios, as in the original notebook
+scenarios:
+  spec_only: false          # no fuel consumption feature
+  spec_plus_consumption: true
+cv_folds: 5
+primary_metric: rmse        # lower is better; used to pick the champion
+models: [linear, ridge, lasso, elasticnet, knn, decision_tree, random_forest,
+         extra_trees, gradient_boosting, hist_gradient_boosting, svr, xgboost, lightgbm]
+tuning:
+  enabled: true
+  top_k: 3                  # tune the best K models from the leaderboard
+  n_iter: 8
+  cv_folds: 3
+registry_dir: models
+monitoring:
+  # Retrain triggers (relative to the champion's baseline test metrics)
+  max_rmse_increase_pct: 10   # live RMSE > baseline*1.10 -> degraded
+  max_mae_increase_pct: 10
+  min_r2_drop: 0.02           # live R2 < baseline-0.02 -> degraded
+  psi_threshold: 0.25         # feature drift
+  min_improvement_pct: 1      # new model must beat champion by >=1% RMSE to be promoted
+rag:
+  knowledge_dir: knowledge
+  chunk_words: 90
+  chunk_overlap: 20
+  top_k: 4
+  min_score: 0.05            # below this similarity we answer "I don't know" instead of guessing
+  embedder: tfidf            # tfidf (offline, default) | sentence-transformers
+  st_model: sentence-transformers/all-MiniLM-L6-v2
+  generator: auto            # auto = Claude if ANTHROPIC_API_KEY is set, else extractive
+  llm_model: claude-sonnet-5-5

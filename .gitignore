@@ -1,0 +1,4 @@
+models/
+predictions.csv
+__pycache__/
+*.egg-info/
