@@ -2,3 +2,8 @@ models/
 predictions.csv
 __pycache__/
 *.egg-info/
+.venv/
+.env
+.pytest_cache/
+data/CO2_Emissions.csv
+*.joblib
