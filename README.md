@@ -18,7 +18,7 @@ It turns a Colab case study (a single LinearRegression) into a deployable projec
 ## Quick start
 
 ```bash
-git clone <your-repo-url> && cd co2-emissions-mlops-rag
+git clone https://github.com/expe-rience/co2-emissions-ml.git && cd co2-emissions-ml
 python -m venv .venv && source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -e . shap fastapi uvicorn anthropic           # optional: xgboost lightgbm
 
