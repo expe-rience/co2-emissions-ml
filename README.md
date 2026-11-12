@@ -51,6 +51,18 @@ Add `--scenario spec_only` to use the model without fuel consumption.
 
 **API endpoints:** `POST /predict?explain=true`, `POST /ask`, `POST /reindex`, `GET /health`. Interactive docs at `/docs`.
 
+## Add your own documents to the assistant
+
+1. Put a `.md` or `.pdf` file in `knowledge/` (the dataset description is already there as `Dataset_Description.pdf`).
+2. Run `co2-ml index` (or `POST /reindex` on a running API).
+3. Ask: `co2-ml ask "What does fuel type code Z mean?"`
+
+How each type is read:
+- **Markdown:** split at headings into ~90-word chunks. Best for explanations and runbooks.
+- **PDF:** text is extracted with `pypdf`, then split by a structured chunker made for lists such as data dictionaries. Each bullet becomes a self-contained fact prefixed with its section (for example `Fuel type: Z = Premium gasoline.`), so a search for "Z" finds the exact line.
+
+Tips: keep each fact in one place (do not add both a PDF and a copy of it as markdown), re-index after every change, and note that scanned PDFs that are only images have no text to extract and need OCR first.
+
 ## Metrics to monitor
 
 A model that looks fine can quietly get worse. Watch these four groups.
@@ -63,7 +75,7 @@ A model that looks fine can quietly get worse. Watch these four groups.
 | **MAE** (g/km) | Average absolute error | Rises more than **10%** over baseline |
 | **R²** | Share of variation explained (1.0 is perfect) | Falls more than **0.02** below baseline |
 
-Baselines are the test-set scores saved with the champion. Your notebook's reference point was RMSE 3.30, R² 0.990 with fuel consumption, and RMSE 22.5, R² 0.86 without it.
+Baselines are the test-set scores saved with the champion. Your notebook's reference points were MAE 3.30, RMSE 6.01, R² 0.9900 with fuel consumption, and MAE 17.29, RMSE 22.52, R² 0.8595 without it.
 
 ### 2. Data drift (works without true values) - implemented
 
@@ -94,7 +106,7 @@ Drift is an early warning. Inputs can change before accuracy visibly drops.
 
 ```
 configs/config.yaml        all settings: models, thresholds, paths, RAG options
-knowledge/                 documents the assistant can read (add your own .md files)
+knowledge/                 documents the assistant reads (.md and .pdf, incl. the dataset description)
 src/co2_ml/
   data.py pipeline.py      loading, cleaning, encoding + model as one object
   models.py train.py       the 13-model zoo, cross-validation, tuning

@@ -8,5 +8,6 @@ fastapi
 uvicorn
 anthropic
 joblib
+pypdf
 xgboost    # optional
 lightgbm   # optional

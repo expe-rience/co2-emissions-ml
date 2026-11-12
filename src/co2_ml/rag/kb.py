@@ -16,6 +16,71 @@ def chunk_text(text, words=90, overlap=20):
             if i + words >= len(toks): break
     return out
 
+
+# ---------- PDF support: PDF -> text -> structured chunks ----------
+_BULLET = re.compile(r"^(?:[\u25cf\u2022\u25aa*\-]|\d{1,2}[.)])\s+")
+
+def pdf_to_text(path):
+    """Read a PDF with pypdf in 'layout' mode (keeps headings and bullets on their own lines).
+    All pages are joined BEFORE chunking so a list that runs across a page break stays together."""
+    try:
+        from pypdf import PdfReader
+    except ImportError as e:
+        raise ImportError("PDF knowledge files need pypdf:  pip install pypdf") from e
+    pages = [p.extract_text(extraction_mode="layout") or "" for p in PdfReader(str(path)).pages]
+    return "\n\n".join(pages).replace("\u200b", "")
+
+def _is_header(line, nxt):
+    """A short line with no number, colon or equals sign, followed by more text = a section header."""
+    w = line.split()
+    return bool(nxt) and 0 < len(w) <= 4 and not _BULLET.match(line) and not re.search(r"[:=.]", line)
+
+def _end(t):
+    t = t.strip()
+    return t if t[-1:] in ".!?" else t + "."
+
+def chunk_structured(text, words=90):
+    """Chunk list-like documents (data dictionaries, glossaries). Rules:
+    - a header line starts a new section; every bullet is one unit and is never split
+    - bullet units are prefixed with their header ('Fuel type: Z = Premium gasoline.') so each one stands alone
+    - units are packed into chunks of about `words` words, inside one section."""
+    lines = [l.rstrip() for l in text.splitlines()]
+    sections, header, units = [], "Document", []
+    def flush():
+        nonlocal units
+        if units: sections.append((header, units)); units = []
+    i = 0
+    while i < len(lines):
+        raw = lines[i].strip(); i += 1
+        if not raw: continue
+        nxt = next((l.strip() for l in lines[i:] if l.strip()), "")
+        m = _BULLET.match(raw)
+        # a lowercase or deeply indented line right after an item is that item's wrapped text, never a new header
+        if units and not m and (not raw[0].isupper() or lines[i-1].startswith(" " * 8)):
+            units[-1][0] += " " + raw
+            continue
+        if _is_header(raw, nxt):
+            flush(); header = raw; continue
+        if m:
+            body = raw[m.end():]
+            numbered = raw[:m.end()].strip()[0].isdigit()
+            units.append([body, not numbered])          # [text, needs header prefix]
+        elif units and (not raw[0].isupper() or lines[i-1].startswith(" " * 8)):   # wrapped line of the previous item
+            units[-1][0] += " " + raw
+        else:
+            units.append([raw, False])                   # plain paragraph line
+    flush()
+    out = []
+    for head, us in sections:
+        cur, n = [], 0
+        for body, prefix in us:
+            u = _end(f"{head}: {body}" if prefix else body)
+            if cur and n + len(u.split()) > words:
+                out.append((head, " ".join(cur))); cur, n = [], 0
+            cur.append(u); n += len(u.split())
+        if cur: out.append((head, " ".join(cur)))
+    return out
+
 def _registry_docs(cfg):
     root = Path(cfg["registry_dir"]); docs = []
     for scen_dir in sorted(p for p in root.glob("*") if p.is_dir() and p.name != "reports"):
@@ -46,8 +111,12 @@ def _registry_docs(cfg):
 
 def build_chunks(cfg):
     rc = cfg["rag"]; chunks = []
-    for f in sorted(Path(rc["knowledge_dir"]).glob("*.md")):
+    kdir = Path(rc["knowledge_dir"])
+    for f in sorted(kdir.glob("*.md")):
         for title, piece in chunk_text(f.read_text(), rc["chunk_words"], rc["chunk_overlap"]):
+            chunks.append({"source": f.name, "title": title, "text": piece})
+    for f in sorted(kdir.glob("*.pdf")):                      # drop a PDF in knowledge/ and re-index
+        for title, piece in chunk_structured(pdf_to_text(f), rc["chunk_words"]):
             chunks.append({"source": f.name, "title": title, "text": piece})
     for src, title, text in _registry_docs(cfg):
         chunks.append({"source": src, "title": title, "text": text})

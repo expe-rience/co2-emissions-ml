@@ -5,9 +5,11 @@ SYSTEM = ("You are an assistant for a vehicle CO2 emissions ML system. Answer ON
           "Cite sources like [1]. If the context does not contain the answer, say you don't know. "
           "Never invent numbers; never claim to have made the prediction yourself - the regression model did. Be concise.")
 
-def _sentences(t): return [s.strip() for s in re.split(r"(?<=[.!?])\s+", t) if len(s.split()) > 3]
+def _sentences(t): return [s.strip() for s in re.split(r"(?<=[.!?])\s+", t) if len(s.split()) > 2]
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
-def _tok(t): return set(re.findall(r"[a-z0-9]+", t.lower())) - ENGLISH_STOP_WORDS
+# question filler words that would otherwise match unrelated sentences ("does", "mean"...)
+_STOP = set(ENGLISH_STOP_WORDS) | {"does", "did", "do", "mean", "means", "meaning", "stand", "stands", "tell", "explain"}
+def _tok(t): return set(re.findall(r"[a-z0-9]+", t.lower())) - _STOP
 
 class ExtractiveGenerator:
     """No LLM: picks the context sentences that best overlap the question. Cheap, offline, can't hallucinate."""

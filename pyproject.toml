@@ -8,7 +8,7 @@ description="Production-style CO2 emissions regression: model zoo, tuning, regis
 requires-python=">=3.9"
 license={text="MIT"}
 authors=[{name="Ankit Kumar Sharma"}]
-dependencies=["pandas","numpy","scikit-learn","scipy","pyyaml","joblib"]
+dependencies=["pandas","numpy","scikit-learn","scipy","pyyaml","joblib","pypdf"]
 [project.optional-dependencies]
 boosters=["xgboost","lightgbm"]
 [project.scripts]

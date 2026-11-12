@@ -11,7 +11,7 @@ scenarios:
   spec_only: false          # no fuel consumption feature
   spec_plus_consumption: true
 cv_folds: 5
-primary_metric: rmse        # lower is better; used to pick the champion
+primary_metric: rmse        # NOTE: not wired yet - train.py ranks on test_rmse directly (see course Lab 4)
 models: [linear, ridge, lasso, elasticnet, knn, decision_tree, random_forest,
          extra_trees, gradient_boosting, hist_gradient_boosting, svr, xgboost, lightgbm]
 tuning:

@@ -21,3 +21,24 @@ def test_api_and_rag(tmp_path, monkeypatch):
     assert "don't know" in c.post("/ask", json={"question": "zebra quantum pizza recipe"}).json()["answer"].lower()
     assert c.post("/ask", json={"question": "Explain this estimate", "vehicle": v}).json()["sources"][0]["source"] == "live-model-output"
     assert c.post("/predict", json={**v, "engine_size_l": -1}).status_code == 422
+
+def test_pdf_knowledge_is_indexed():
+    from co2_ml.rag.kb import build_chunks, chunk_structured
+    cfg = load_config("configs/config.yaml"); cfg["registry_dir"] = "/nonexistent_registry"
+    pdf = [c for c in build_chunks(cfg) if c["source"] == "Dataset_Description.pdf"]
+    assert pdf, "PDF in knowledge/ was not indexed"
+    text = " ".join(c["text"] for c in pdf)
+    assert "Fuel type: Z = Premium gasoline." in text and "Transmission: AV = Continuously variable." in text
+    # a list that wraps lines stays one item
+    out = chunk_structured("Header\n\n    1.  Alpha: first part\n        continues here\n    2.  Beta: second")
+    assert any("first part continues here" in c for _, c in out)
+
+
+def test_unknown_code_is_flagged(tmp_path):
+    from co2_ml.rag import RAGPipeline
+    cfg = load_config("configs/config.yaml"); cfg["registry_dir"] = str(tmp_path / "models")
+    rag = RAGPipeline(cfg)
+    ok = rag.ask("What does fuel type code Z mean?")
+    assert ok["unknown_terms"] == [] and "Premium gasoline" in ok["answer"]
+    bad = rag.ask("What does fuel type code Zz mean?")
+    assert bad["unknown_terms"] == ["zz"] and bad["answer"].startswith("Note: I found nothing about 'zz'")
